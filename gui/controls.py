@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QPushButton
+from PySide6.QtWidgets import QPushButton, QFileDialog
 from sequencer.sample_player import SamplePlayer
 
 class PlayerControls:
@@ -8,6 +8,7 @@ class PlayerControls:
         # przyciski w GUI
         self.play_button = QPushButton("Play", parent)
         self.stop_button = QPushButton("Stop", parent)
+        self.select_song = QPushButton("Select Sample", parent)
 
         # instancja SamplePlayer
         self.player = SamplePlayer()
@@ -23,3 +24,9 @@ class PlayerControls:
 
     def stop_clicked(self):
         self.player.stop()
+
+    def open_file_dialog(self, parent):
+        self.select_song.clicked.connect(self.open_file_dialog)
+        filename, _ = QFileDialog.getOpenFileName(parent, "Wybierz plik dźwiękowy", "", "Audio Files (*.wav *.mp3)")
+        if filename:
+            self.player.play(filename)
