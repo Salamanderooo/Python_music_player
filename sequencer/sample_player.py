@@ -1,41 +1,72 @@
 import wave
 import pyaudio
-from PySide6.QtCore import QThread, Signal
+import threading
+import time
+
 
 CHUNK = 1024
 
-class SamplePlayer(QThread):
-    finished = Signal()
 
+class SamplePlayer:
     def __init__(self):
-        super().__init__()
+        self.p = pyaudio.PyAudio()
+
+        self.thread = None
         self.filename = None
-        self.stop_flag =False
+
+        self.stop_flag = False
+        self.lock = threading.Lock()
 
     def play(self, filename):
-        self.filename = filename
-        self.stop_flag = False
-        if not self.isRunning():
-            self.start()
+        with self.lock:
+            self.stop()
 
-    def run(self):
-        wf = wave.open(self.filename, 'rb')
-        p = pyaudio.PyAudio()
+            self.filename = filename
+            self.stop_flag = False
 
-        stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),
-                        channels=wf.getnchannels(),
-                        rate=wf.getframerate(),
-                        output=True)
-        
-        data = wf.readframes(CHUNK)
-        while data and not self.stop_flag:
-            stream.write(data)
-            data = wf.readframes(CHUNK) 
-
-        stream.close()
-        p.terminate()
-        wf.close()
-        self.finished.emit()
+            self.thread = threading.Thread(target=self._run, daemon=True)
+            self.thread.start()
 
     def stop(self):
-        self.stop_flag = True        
+        self.stop_flag = True
+
+        # daj chwilę na domknięcie write()
+        time.sleep(0.02)
+
+    def _run(self):
+        wf = None
+        stream = None
+
+        try:
+            wf = wave.open(self.filename, 'rb')
+
+            stream = self.p.open(
+                format=self.p.get_format_from_width(wf.getsampwidth()),
+                channels=wf.getnchannels(),
+                rate=wf.getframerate(),
+                output=True
+            )
+
+            data = wf.readframes(CHUNK)
+
+            while data and not self.stop_flag:
+                try:
+                    stream.write(data)
+                except:
+                    break
+                data = wf.readframes(CHUNK)
+
+        finally:
+            # SAFE cleanup (lokalnie, nie globalnie)
+            if stream:
+                try:
+                    stream.stop_stream()
+                    stream.close()
+                except:
+                    pass
+
+            if wf:
+                try:
+                    wf.close()
+                except:
+                    pass
