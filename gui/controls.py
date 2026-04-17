@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QListWidget, QListWidgetItem, QPushButton, QFileDialog, QWidget, QSlider
+from PySide6.QtWidgets import QListWidget, QListWidgetItem, QPushButton, QFileDialog, QWidget, QSlider, QLabel
 from PySide6.QtCore import Qt, QTimer
 from sequencer.sample_player import SamplePlayer
 
@@ -24,6 +24,7 @@ class PlayerControls:
         self.timer = QTimer()
         self.timer.setInterval(100)
         self.timer.timeout.connect(self.update_position)
+        self.time_label = QLabel("0:00 / 0:00", parent)
         
 
         # instation SamplePlayer
@@ -87,7 +88,16 @@ class PlayerControls:
             # convert to milliseconds and update slider
             self.position_slider.setValue(int(position * 1000))
             self.position_slider.setMaximum(int(duration * 1000))
+            self.time_label.setText(f"{self.format_time(position)} / {self.format_time(duration)}")
 
     def reset_position(self):
-        self.position_slider.setValue(0)               
+        self.position_slider.setValue(0)    
+
+    def format_time(self, seconds):
+        seconds = int(seconds)
+        minutes = seconds // 60
+        secs = seconds % 60
+        return f"{minutes}:{secs:02d}" # :02d means "always 2 digits", so 3 becomes 03
+
+
         

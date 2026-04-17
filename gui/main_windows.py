@@ -21,3 +21,4 @@ class MainWindow(QWidget):
         layout.addWidget(self.controls.next_button)
         layout.addWidget(self.controls.prev_button)
         layout.addWidget(self.controls.position_slider)
+        layout.addWidget(self.controls.time_label)
