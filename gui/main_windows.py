@@ -20,4 +20,4 @@ class MainWindow(QWidget):
         layout.addWidget(self.controls.select_song)
         layout.addWidget(self.controls.next_button)
         layout.addWidget(self.controls.prev_button)
-       
+        layout.addWidget(self.controls.position_slider)

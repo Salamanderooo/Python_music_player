@@ -1,5 +1,5 @@
-from PySide6.QtWidgets import QListWidget, QListWidgetItem, QPushButton, QFileDialog, QWidget
-from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QListWidget, QListWidgetItem, QPushButton, QFileDialog, QWidget, QSlider
+from PySide6.QtCore import Qt, QTimer
 from sequencer.sample_player import SamplePlayer
 
 
@@ -16,9 +16,17 @@ class PlayerControls:
         self.select_song = QPushButton("Select Sample", parent)
         self.next_button = QPushButton("Next", parent)
         self.prev_button = QPushButton("Previous", parent)
+        # song Progress bar
+        self.position_slider = QSlider(Qt.Horizontal, parent)
+        self.position_slider.setMinimum(0)
+        self.position_slider.setMaximum(1000)
+        # timer for actuall song position
+        self.timer = QTimer()
+        self.timer.setInterval(100)
+        self.timer.timeout.connect(self.update_position)
         
 
-        # instancja SamplePlayer
+        # instation SamplePlayer
         self.player = SamplePlayer()
         
         # podłączenie przycisków do metod
@@ -34,6 +42,8 @@ class PlayerControls:
 
     def stop_clicked(self):
         self.player.stop()
+        self.timer.stop()  # stops the timer 
+        self.reset_position()   # resets the position slider to 0
         self.sync_ui()
 
     def next_clicked(self):
@@ -61,8 +71,23 @@ class PlayerControls:
         
     def set_current_index(self, index):
         if 0 <= index < len(self.playlist):
-            self.player.stop()  # zatrzymaj aktualnie odtwarzany utwór
+            self.player.stop()      # zatrzymaj aktualnie odtwarzany utwór
             self.current_index = index
             self.player.play(self.playlist[self.current_index])
             self.sync_ui()
+            self.reset_position()   # snaps slider to 0
+            self.timer.start()      # starts the timer to update position slider
+
+    def update_position(self):
+        # postion caller every 100ms by timer
+        position = self.player.get_position()
+        duration = self.player.get_duration()
+
+        if duration > 0:
+            # convert to milliseconds and update slider
+            self.position_slider.setValue(int(position * 1000))
+            self.position_slider.setMaximum(int(duration * 1000))
+
+    def reset_position(self):
+        self.position_slider.setValue(0)               
         
